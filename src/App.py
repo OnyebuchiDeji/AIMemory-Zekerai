@@ -119,15 +119,15 @@ class Grid:
         """
         mx = min(max(0.1, (mouse_pos[0] - self.win_width / 2) + self.width/2), self.width)
         my = min(max(0.1, (mouse_pos[1] - self.win_height / 2) + self.height/2), self.height)
-        print("Norm X, Y:", mx, my)
+        # print("Norm X, Y:", mx, my)
         return (mx, my)
 
-    def _get_clicked_cell(self, click_pos: tuple[int, int]) -> int:
+    def _get_clicked_cell(self, click_pos: tuple[float, float]) -> int:
         """Logic for getting clicked cell"""
         ##  factor of grid width / click position x
-        fx = self.width / click_pos[0]
+        fx = self.width / int(click_pos[0])
         ##  factor of grid height / click position y
-        fy = self.height / click_pos[1]
+        fy = self.height / int(click_pos[1])
         # print("fx, fy: ", fx, fy)
 
         #   Get corresponding factor based on num of cols and rows
@@ -173,7 +173,7 @@ class Grid:
         mouse_pos = self._normalize_mouse_pos(pg.mouse.get_pos())
         indexOfClickedCell = self._get_clicked_cell(mouse_pos)
 
-        print("Clicked: ", indexOfClickedCell)
+        # print("Clicked: ", indexOfClickedCell)
         current_val = self.current_array[indexOfClickedCell]
 
         if current_val == 1:
@@ -243,6 +243,9 @@ class Grid:
 
 class App:
     def __init__(self):
+        pg.init()
+        # pg.font.init()
+
         self.win_width, self.win_height = 720, 405
         self.grid_arx, self.grid_ary = 7, 9
         self.cell_size = 40
@@ -252,6 +255,10 @@ class App:
         self.grid_surf = pg.Surface((self.grid_width, self.grid_height))
 
         pg.display.set_caption("Artificial Memory - The Hopfield")
+        self.label_font = pg.font.SysFont("Verdana", 12)
+        self.control_step_string = ""
+        self.grid_input_state_string = ""
+        self.grid_state_string = ""
         self.clock = pg.time.Clock()
         self.fps = 60
 
@@ -261,8 +268,53 @@ class App:
                         (self.win_width, self.win_height))
         self.hopfield = HopfieldN1()
 
+
+
+    def render_labels(self):
+        """
+            Create the text labels surfaces and render them
+        """
+    
+        self.grid_state_string = "Clear" if sum(self.grid.current_array) == -len(self.grid.current_array) else "Filled"
+
+        grid_input_label = self.label_font.render(self.grid_input_state_string,
+                                                        True, pg.Color('black'), pg.Color('grey'))
+        state_label = self.label_font.render(f"Grid Status: {self.grid_state_string}", True, pg.Color('black'), pg.Color('grey'))
+        
+        control_steps_label = self.label_font.render(f"Step: {self.control_step_string}",
+                                                         True, pg.Color('black'), pg.Color('grey'))
+
+        self.window.blit(grid_input_label, (0, 0))
+        self.window.blit(state_label, (0, state_label.get_height()))
+        self.window.blit(control_steps_label, (0, self.win_height - control_steps_label.get_height()))
+
+
+    #   added on 25th August, 2025
+    def init_grid_inputs(self, gridInputs: list[list[int]]):
+        """
+            Prefills the grid inputs so on startup one can go directly to drawing the noisy input pattern
+            It also initializes the text display showing controls and the the starting states.
+            Controls' text is static but the Grid Canvas text is dynamic like its state
+        """
+
+        #   Prefill the Grid Inputs
+        self.grid.inputs = gridInputs
+
+
+        if len(self.grid.inputs) > 0:
+            self.grid_input_state_string = "Hopfield inputs have been prefilled (No need to enter input patterns now)"
+            self.control_step_string = "Input noisy pattern by mouse clicking on grid (they should resemble either a 1, 4, or 6) and press 'n' to save it"
+        else:
+            self.grid_input_state_string = "Hopfield inputs have not been prefilled"
+            self.control_step_string = "Click grid to input new pattern for input to initialize hopfield network. Press k to input next pattern. Do this 3 times"
+        
+        # self.render_labels()
+
+
+
     def run(self):
         """Main Loop and Key Callbacks"""
+        print_debug = True
         while not self.stop:
             for e in pg.event.get():
                 if e.type == pg.QUIT or (e.type == pg.KEYDOWN and e.key == pg.K_ESCAPE):
@@ -271,19 +323,29 @@ class App:
                     if e.key == pg.K_s:
                         self.grid.save_current_array()
                     if e.key == pg.K_n:
+                        self.control_step_string = "Press 'r' to run the Hopfield pattern retrieval algorithm"
                         self.grid.save_noisy_input()
                     if e.key == pg.K_c:
+                        self.grid_input_state_string = "Hopfield network reset. Enter new input patterns to initialize hopfield network"
+                        # self.control_step_string = "Draw new pattern for input. Press k to clear grid and input next pattern. Do this 3 times"
+                        self.control_step_string = "Draw new pattern for input. 's' -> save pattern and 'k' -> clear grid to input next pattern. Do this 3 times"
                         self.grid.clear_inputs()
                         self.hopfield.reset()
                     if e.key == pg.K_k:
+                        self.grid_input_state_string = "Hopfield network reset. Enter new input patterns to initialize hopfield network"
+                        self.control_step_string = "Draw new pattern for input. 's' -> save pattern and 'k' -> clear grid to input next pattern. Do this 3 times"
                         self.grid.new_noise_input()
                     if e.key == pg.K_r:
                         #   Runs the HopfieldAlgo
                         #   and switches flag to display changing current_array
+                        print_debug = True
                         self.hopfield.oninit(self.grid.inputs)
                         self.grid.update_flag = True
 
                         self.grid_gen = self.hopfield.retrieve_pattern_v2(self.grid.noisy_input)
+
+                        self.grid_input_state_string = "Hopfield pattern retrieval has ran"
+                        self.control_step_string = "Press 'c' -> clear grid and reset the hopfield network"
                     
 
             if self.grid.update_flag:
@@ -293,7 +355,9 @@ class App:
                 try:
                     self.grid.noisy_input = next(self.grid_gen)
                 except StopIteration:
-                    print("Finished Revising!")
+                    if print_debug:
+                        print("Finished Revising!")
+                        print_debug = False
                 self.grid.update_current_array(self.grid.noisy_input)
             
             self.render_grid()
@@ -305,6 +369,8 @@ class App:
         """Creates Grid to interact with"""
         # self.grid_surf.fill((0, 0, 0))
         self.window.fill('grey')
+
+        self.render_labels()
 
         # draw_cell(self.grid_surf, 0, 0, self.cell_size, -1)
         self.grid.render()

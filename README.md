@@ -1,5 +1,13 @@
 #   Date: Mon-24-March-2025
 
+#   How to Use the App
+
+1.  run `pip install -r requirements.txt`
+2.  Run the `main.py`
+>   The instructions and controls are provided by the GUI
+3.  Right now, the network can only be initialized with 3 input patterns. By default, the prefilled input patterns
+    are for the numbers, '1', '4', and '6'
+
 
 #   A Simple Recurrent Neural Network: The Hopfield RNN
 
@@ -148,7 +156,7 @@ It uses a concept called a ***Moving Window***.
         -2 -2  0
     ]
 
-+   Wr is the resulting sum-matrix and canthen be mapped on to the NN.
++   Wr is the resulting sum-matrix and can then be mapped on to the NN.
     Consider 3 units, U1, U2, U3
 
     Wr = [
@@ -249,3 +257,6 @@ NOISE
 
 4 - Even better
 [-1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+
+6 - correct
+[-1, -1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1, 1, -1, -1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1]
